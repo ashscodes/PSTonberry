@@ -1,0 +1,16 @@
+root = true
+
+# Code files
+[*.cs]
+dotnet_diagnostic.IDE0005.severity = warning
+dotnet_diagnostic.IDE0055.severity = warning
+dotnet_sort_system_directives_first = true
+indent_size = 4
+indent_style = space
+
+# Analysers
+dotnet_diagnostic.IDE0200.severity = none
+dotnet_diagnostic.IDE0290.severity = none
+
+# Style
+dotnet_analyzer_diagnostic.category-Style.severity = none

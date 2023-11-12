@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Types>
+    <Type>
+        <Name>TonberryVersion</Name>
+        <TypeConverter>
+            <TypeName>PSTonberry.TonberryVersionPSTypeConverter</TypeName>
+        </TypeConverter>
+    </Type>
+</Types>

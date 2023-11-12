@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Workaround for git submodules -->
+  <ItemGroup Condition="Exists('$(SolutionDir)/../tonberry/src/Tonberry.Core/Tonberry.Core.csproj')">
+    <ProjectReference Include="../../tonberry/src/Tonberry.Core/Tonberry.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup
+    Condition="Exists('$(SolutionDir)/../tonberry/src/Tonberry.Prompt/Tonberry.Prompt.csproj')">
+    <ProjectReference Include="../../tonberry/src/Tonberry.Prompt/Tonberry.Prompt.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <LangVersion>preview</LangVersion>
+    <TargetFramework>net7.0</TargetFramework>
+  </PropertyGroup>
+
+</Project>
