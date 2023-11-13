@@ -1,12 +1,13 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Language;
 
 namespace PSTonberry.Model;
 
-internal class PSDataFile : IPowerShellDataFile
+public class PSDataFile : IPowerShellDataFile
 {
     private Hashtable _dataFile;
 
@@ -14,11 +15,13 @@ internal class PSDataFile : IPowerShellDataFile
 
     private string _moduleName;
 
-    private Token[] _tokens;
+    private List<PSDataTokenCollection> _tokenCollections;
+
+    public PSTonberryData Tonberry { get; set; }
 
     public PSDataFile() => _dataFile = [];
 
-    public PSTonberryData GetTonberryData()
+    public void GetTonberryData()
     {
         throw new System.NotImplementedException();
     }
@@ -34,15 +37,14 @@ internal class PSDataFile : IPowerShellDataFile
                 throw new InvalidOperationException(string.Format(Resources.ModuleCouldNotBeParsed, _module.FullName));
             }
 
-            _tokens = tokens;
+            ProcessTokens(tokens);
             var data = ast.Find(i => i is HashtableAst, false);
-            if (data is not null)
+            if (data is null)
             {
-                _dataFile = (Hashtable)data.SafeGetValue();
-                return;
+                throw new InvalidOperationException(string.Format(Resources.ModuleDataNotHashtable, _module.FullName));
             }
 
-            throw new InvalidOperationException(string.Format(Resources.ModuleDataNotHashtable, _module.FullName));
+            _dataFile = (Hashtable)data.SafeGetValue();
         }
     }
 
@@ -54,6 +56,44 @@ internal class PSDataFile : IPowerShellDataFile
     public void WriteDataFile()
     {
         throw new System.NotImplementedException();
+    }
+
+    private void ProcessTokens(Token[] tokens)
+    {
+        if (tokens is not null && tokens.Length != 0)
+        {
+            int indent = 0;
+            int index = 0;
+            int line = 1;
+            var tokenCollection = new PSDataTokenCollection(line, indent);
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                tokenCollection.Add(tokens[i], index);
+                index++;
+                if (tokens[i].Kind is TokenKind.EndOfInput)
+                {
+                    _tokenCollections.Add(tokenCollection);
+                }
+
+                if (tokens[i].Kind is TokenKind.NewLine)
+                {
+                    _tokenCollections.Add(tokenCollection);
+                    line++;
+                    index = 0;
+                    tokenCollection = new PSDataTokenCollection(line, indent);
+                }
+
+                if (tokens[i].Kind is TokenKind.AtCurly)
+                {
+                    indent += 2;
+                }
+
+                if (tokens[i].Kind is TokenKind.RCurly)
+                {
+                    indent -= 2;
+                }
+            }
+        }
     }
 
     private bool TryGetPowerShellDataFile(string name, DirectoryInfo directory)
@@ -86,7 +126,7 @@ internal class PSDataFile : IPowerShellDataFile
 
 internal interface IPowerShellDataFile
 {
-    PSTonberryData GetTonberryData();
+    void GetTonberryData();
 
     void ReadDataFile(PSModuleInfo moduleInfo, DirectoryInfo directory);
 
