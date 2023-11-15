@@ -36,6 +36,8 @@ public sealed class NewTonberryConfiguration : SingleResultCommand<TonberryInitT
 
     protected override void Validate() => base.Validate();
 
+    internal override void GetTonberryConfig() { }
+
     [Parameter(DontShow = true)]
     bool ITonberryInitOptions.Open
     {

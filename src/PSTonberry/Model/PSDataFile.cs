@@ -1,136 +1,45 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
-using System.Management.Automation;
 using System.Management.Automation.Language;
 
 namespace PSTonberry.Model;
 
-public class PSDataFile : IPowerShellDataFile
+internal class PSDataFile
 {
-    private Hashtable _dataFile;
+    public PSDataFileAst<HashtableAst> DataFile { get; internal set; }
 
-    private FileInfo _module;
+    public DirectoryInfo ModuleDirectory;
 
-    private string _moduleName;
+    public string ModuleName;
 
-    private List<PSDataTokenCollection> _tokenCollections;
+    public string ModulePath;
 
-    public PSTonberryData Tonberry { get; set; }
+    public PSDataFileAst<HashtableAst> TonberryData { get; internal set; }
 
-    public PSDataFile() => _dataFile = [];
+    public bool IsTonberryEnabled => TonberryData is not null;
 
-    public void GetTonberryData()
+    public bool IsValid => DataFile is not null;
+
+    internal PSDataFile(string moduleName, DirectoryInfo directory) : base()
     {
-        throw new System.NotImplementedException();
+        ModuleDirectory = directory;
+        ModuleName = moduleName;
     }
 
-    public void ReadDataFile(PSModuleInfo moduleInfo, DirectoryInfo directory)
+    internal PSDataFile(PSDataFileAst<HashtableAst> dataFileAst,
+                        string filePath,
+                        string moduleName,
+                        DirectoryInfo directory) : this(moduleName, directory)
     {
-        _moduleName = moduleInfo.Name;
-        if (TryGetPowerShellDataFile(_moduleName, directory))
-        {
-            var ast = Parser.ParseFile(_module.FullName, out Token[] tokens, out ParseError[] errors);
-            if (errors.Length > 0)
-            {
-                throw new InvalidOperationException(string.Format(Resources.ModuleCouldNotBeParsed, _module.FullName));
-            }
-
-            ProcessTokens(tokens);
-            var data = ast.Find(i => i is HashtableAst, false);
-            if (data is null)
-            {
-                throw new InvalidOperationException(string.Format(Resources.ModuleDataNotHashtable, _module.FullName));
-            }
-
-            _dataFile = (Hashtable)data.SafeGetValue();
-        }
+        DataFile = dataFileAst;
+        ModulePath = filePath;
     }
 
-    public void SetTonberryData()
+    internal PSDataFile(PSDataFileAst<HashtableAst> dataFileAst,
+                        PSDataFileAst<HashtableAst> tonberryConfigAst,
+                        string filePath,
+                        string moduleName,
+                        DirectoryInfo directory) : this(dataFileAst, filePath, moduleName, directory)
     {
-        throw new System.NotImplementedException();
+        TonberryData = tonberryConfigAst;
     }
-
-    public void WriteDataFile()
-    {
-        throw new System.NotImplementedException();
-    }
-
-    private void ProcessTokens(Token[] tokens)
-    {
-        if (tokens is not null && tokens.Length != 0)
-        {
-            int indent = 0;
-            int index = 0;
-            int line = 1;
-            var tokenCollection = new PSDataTokenCollection(line, indent);
-            for (int i = 0; i < tokens.Length; i++)
-            {
-                tokenCollection.Add(tokens[i], index);
-                index++;
-                if (tokens[i].Kind is TokenKind.EndOfInput)
-                {
-                    _tokenCollections.Add(tokenCollection);
-                }
-
-                if (tokens[i].Kind is TokenKind.NewLine)
-                {
-                    _tokenCollections.Add(tokenCollection);
-                    line++;
-                    index = 0;
-                    tokenCollection = new PSDataTokenCollection(line, indent);
-                }
-
-                if (tokens[i].Kind is TokenKind.AtCurly)
-                {
-                    indent += 2;
-                }
-
-                if (tokens[i].Kind is TokenKind.RCurly)
-                {
-                    indent -= 2;
-                }
-            }
-        }
-    }
-
-    private bool TryGetPowerShellDataFile(string name, DirectoryInfo directory)
-    {
-        var moduleFileName = name + ".psd1";
-        var files = directory.GetFiles(moduleFileName, SearchOption.TopDirectoryOnly);
-        if (files is null || files.Length == 0)
-        {
-            throw new FileNotFoundException(string.Format(Resources.ModuleNotFound, moduleFileName));
-        }
-
-        if (files.Length == 1)
-        {
-            _module = files[0];
-            return true;
-        }
-
-        foreach (var file in files)
-        {
-            if (file.Directory.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                _module = file;
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
-
-internal interface IPowerShellDataFile
-{
-    void GetTonberryData();
-
-    void ReadDataFile(PSModuleInfo moduleInfo, DirectoryInfo directory);
-
-    void SetTonberryData();
-
-    void WriteDataFile();
 }

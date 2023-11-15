@@ -16,6 +16,8 @@ public abstract class BaseCommand<T, O> : PSCmdlet
 {
     protected const string TonberryConfig = "global:TonberryConfig";
 
+    protected const string TonberryRoot = "global:TonberryRoot";
+
     private bool _allowNonExistentPaths;
 
     private string[] _pathParameters = ["LiteralPath", "OutFile", "Path"];
@@ -123,7 +125,8 @@ public abstract class BaseCommand<T, O> : PSCmdlet
 
             if (unknownPath)
             {
-                if (AllowNonExistentPaths && (SuppressWildcardExpression || WildcardPattern.ContainsWildcardCharacters(path)))
+                if (AllowNonExistentPaths
+                    && (SuppressWildcardExpression || WildcardPattern.ContainsWildcardCharacters(path)))
                 {
                     var unresolved = SessionState.Path.GetUnresolvedProviderPathFromPSPath(path,
                                                                                            out ProviderInfo provider,
@@ -148,24 +151,6 @@ public abstract class BaseCommand<T, O> : PSCmdlet
         }
     }
 
-    private void ValidateCommand()
-    {
-        if (_task is not TonberryInitTask)
-        {
-            try
-            {
-                _task.Config = UserDirectory.ReadConfig();
-            }
-            catch (Exception exception)
-            {
-                ThrowTerminatingError(exception);
-            }
-        }
-
-        _task.SetOptions(GetOptions());
-        _task.SetDirectory(UserDirectory);
-    }
-
     protected void CreateDirectory(FileSystemInfo fileSystemInfo)
     {
         if (fileSystemInfo is FileInfo fileInfo)
@@ -176,27 +161,20 @@ public abstract class BaseCommand<T, O> : PSCmdlet
         Directory.CreateDirectory(fileSystemInfo.FullName);
     }
 
-    protected void SetTonberryConfig(PSTonberryConfiguration config)
-        => SessionState.PSVariable.Set(new PSVariable(TonberryConfig, config, ScopedItemOptions.None));
-
-    protected void SetUserDirectory()
-        => UserDirectory = new DirectoryInfo(SessionState.Path.CurrentFileSystemLocation.Path);
-
     protected virtual void ThrowTerminatingError(Exception exception, string id = "TONBERRY_ERROR")
     {
-        ThrowTerminatingError(new ErrorRecord(exception, id, ErrorCategory.OperationStopped, MyInvocation.MyCommand.Name));
+        ThrowTerminatingError(new ErrorRecord(exception,
+                                              id,
+                                              ErrorCategory.OperationStopped,
+                                              MyInvocation.MyCommand.Name));
     }
 
-    protected virtual void Validate()
-    {
-        ValidateCommand();
-    }
+    protected virtual void Validate() { }
 
     protected override void BeginProcessing()
     {
         base.BeginProcessing();
-        SetUserDirectory();
-        Validate();
+        GetTonberryConfig();
     }
 
     protected override void ProcessRecord()
@@ -206,7 +184,65 @@ public abstract class BaseCommand<T, O> : PSCmdlet
         {
             ResolveParameterPaths();
         }
+
+        _task.SetOptions(GetOptions());
+        _task.SetDirectory(UserDirectory);
     }
 
     protected abstract O GetOptions();
+
+    protected virtual void GetTonberryConfig()
+    {
+        PSTonberryConfiguration config = (PSTonberryConfiguration)SessionState.PSVariable.GetValue(TonberryConfig);
+        if (config is null)
+        {
+            GetTonberryRoot();
+            if (_task is not TonberryInitTask)
+            {
+                try
+                {
+                    if (PSDataFileConverter.TryReadDataFile(SessionState.Module,
+                                                            UserDirectory,
+                                                            out PSDataFile dataFile))
+                    {
+                        config = new PSTonberryConfiguration(dataFile);
+                    }
+                    else
+                    {
+                        config = (PSTonberryConfiguration)UserDirectory.ReadConfig();
+                    }
+                }
+                catch (Exception exception)
+                {
+                    ThrowTerminatingError(exception);
+                }
+            }
+        }
+
+        _task.Config = config;
+    }
+
+    protected virtual void GetTonberryRoot()
+    {
+        var tonberryRoot = SessionState.PSVariable.GetValue(TonberryRoot);
+        if (tonberryRoot is not null)
+        {
+            if (tonberryRoot is string stringRoot)
+            {
+                UserDirectory = new DirectoryInfo(stringRoot);
+                return;
+            }
+
+            if (tonberryRoot is DirectoryInfo dirRoot)
+            {
+                UserDirectory = dirRoot;
+                return;
+            }
+        }
+
+        UserDirectory = new DirectoryInfo(SessionState.Path.CurrentFileSystemLocation.Path);
+    }
+
+    protected void SetTonberryConfig(PSTonberryConfiguration config)
+        => SessionState.PSVariable.Set(new PSVariable(TonberryConfig, config, ScopedItemOptions.None));
 }
