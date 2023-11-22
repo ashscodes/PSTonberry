@@ -2,9 +2,9 @@ using System;
 
 namespace PSTonberry;
 
-internal static class StringExtensions
+public static class StringExtensions
 {
-    public static int CountCollectionTokens(this string value, char open, char close)
+    public static int CountNestedTokens(this string value, char open, char close)
     {
         int opened = 0;
         int closed = 0;
@@ -44,7 +44,7 @@ internal static class StringExtensions
                 return offset;
             }
 
-            offset = value.IndexOf(value, offset + 1);
+            offset = value.IndexOf(character, offset + 1);
         }
 
         return offset;

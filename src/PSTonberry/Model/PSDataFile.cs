@@ -1,45 +1,53 @@
+using System;
 using System.IO;
 using System.Management.Automation.Language;
 
 namespace PSTonberry.Model;
 
-internal class PSDataFile
+internal class PSDataFile : PSTokenCollection<ScriptBlockAst>
 {
-    public PSDataFileAst<HashtableAst> DataFile { get; internal set; }
+    public bool HasPrivateData => !HasError && PrivateData is not null;
 
-    public DirectoryInfo ModuleDirectory;
+    public FileInfo Path { get; set; }
 
-    public string ModuleName;
+    public PSPrivateData PrivateData { get; set; }
 
-    public string ModulePath;
+    public DirectoryInfo Root { get; set; }
 
-    public PSDataFileAst<HashtableAst> TonberryData { get; internal set; }
-
-    public bool IsTonberryEnabled => TonberryData is not null;
-
-    public bool IsValid => DataFile is not null;
-
-    internal PSDataFile(string moduleName, DirectoryInfo directory) : base()
+    public PSDataFile(string filePath)
     {
-        ModuleDirectory = directory;
-        ModuleName = moduleName;
+        Path = new FileInfo(filePath);
+        Root = Path.Directory;
+        Init(filePath);
     }
 
-    internal PSDataFile(PSDataFileAst<HashtableAst> dataFileAst,
-                        string filePath,
-                        string moduleName,
-                        DirectoryInfo directory) : this(moduleName, directory)
+    public override void Write(StreamWriter writer)
     {
-        DataFile = dataFileAst;
-        ModulePath = filePath;
+        throw new NotImplementedException();
     }
 
-    internal PSDataFile(PSDataFileAst<HashtableAst> dataFileAst,
-                        PSDataFileAst<HashtableAst> tonberryConfigAst,
-                        string filePath,
-                        string moduleName,
-                        DirectoryInfo directory) : this(dataFileAst, filePath, moduleName, directory)
+    private void Init(string filePath)
     {
-        TonberryData = tonberryConfigAst;
+        ParseError[] errors;
+        Token[] tokens;
+        var fileAst = Parser.ParseFile(filePath, out tokens, out errors);
+        if (errors.Length > 0)
+        {
+            Error = new InvalidOperationException(string.Format(Resources.DataFileCouldNotBeParsed, filePath));
+            return;
+        }
+
+        var dataFileStr = fileAst.ToString();
+        if (TryParseSection(dataFileStr, Resources.PrivateData, out string privateDataStr))
+        {
+            PrivateData = new PSPrivateData(privateDataStr);
+            dataFileStr = dataFileStr.Replace(privateDataStr, null);
+        }
+
+        if (TryGetAstFromString(dataFileStr, out ScriptBlockAst scriptBlockAst, out tokens))
+        {
+            Ast = scriptBlockAst;
+            Lines = tokens.ToTokenizedLines();
+        }
     }
 }

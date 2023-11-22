@@ -7,7 +7,8 @@ namespace PSTonberry.Command;
 [Alias(new[] { "tonberry-init" })]
 [Cmdlet(VerbsCommon.New, "TonberryConfiguration", DefaultParameterSetName = "Init")]
 [OutputType(typeof(void))]
-public sealed class NewTonberryConfiguration : SingleResultCommand<TonberryInitTask, TonberryInitOptions, TonberryInitResult>, ITonberryInitOptions
+public sealed class NewTonberryConfigurationCommand :
+    SingleResultCommand<TonberryInitTask, TonberryInitOptions, TonberryInitResult>, ITonberryInitOptions
 {
     [Parameter(Mandatory = false, Position = 1)]
     [ValidateNotNullOrEmpty]
@@ -35,8 +36,6 @@ public sealed class NewTonberryConfiguration : SingleResultCommand<TonberryInitT
     protected override TonberryInitOptions GetOptions() => new((ITonberryInitOptions)this);
 
     protected override void Validate() => base.Validate();
-
-    internal override void GetTonberryConfig() { }
 
     [Parameter(DontShow = true)]
     bool ITonberryInitOptions.Open

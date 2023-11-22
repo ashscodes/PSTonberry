@@ -3,20 +3,20 @@ using Tonberry.Core.Model;
 
 namespace PSTonberry.Command;
 
-public abstract class SingleResultCommand<T, O, R> : BaseCommand<T, O>
-    where T : TonberrySingleTask, new()
+public abstract class MultiResultCommand<T, O, R> : TonberryCommand<T, O>
+    where T : TonberryMultiTask, new()
     where O : TonberryTaskOptions, new()
-    where R : TonberryResult, new()
+    where R : TonberryResultCollection, new()
 {
-    internal R _result;
+    internal R _results;
 
-    internal SingleResultCommand() : base() { }
+    internal MultiResultCommand() : base() { }
 
     protected override void BeginProcessing() => base.BeginProcessing();
 
     protected override void ProcessRecord()
     {
         base.ProcessRecord();
-        _result = (R)_task.Invoke();
+        _results = (R)_task.Invoke();
     }
 }
