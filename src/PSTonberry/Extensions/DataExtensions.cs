@@ -25,46 +25,41 @@ internal static class DataExtensions
         return new PSTonberryConfiguration(dataFile, directory);
     }
 
-    public static bool TryGetCommentedText(this PSTokenizedLine dataFileLine, out PSTokenizedLine comment)
+    public static void GetCommentedText(this PSTokenizedLine tokenizedLine)
     {
-        comment = new PSTokenizedLine(dataFileLine.Line, dataFileLine.Indent);
-        if (!dataFileLine.IsMultiLineComment && !dataFileLine.IsSingleLineComment)
+        tokenizedLine.CommentContent = new PSTokenizedLine(tokenizedLine.Line, tokenizedLine.Indent);
+        if (!tokenizedLine.IsMultiLineComment && !tokenizedLine.IsSingleLineComment)
         {
-            return false;
+            return;
         }
 
         int newIndex = 0;
-        foreach (var dataToken in dataFileLine)
+        foreach (var dataToken in tokenizedLine)
         {
-            ProcessToken(dataToken, comment, ref newIndex);
+            ProcessToken(dataToken, tokenizedLine.CommentContent, ref newIndex);
         }
 
-        comment.TrackChanges = true;
-        return true;
+        tokenizedLine.CommentContent.TrackChanges = true;
     }
 
     public static List<PSTokenizedLine> ToTokenizedLines(this Token[] tokens)
     {
-        var tokenCollections = new List<PSTokenizedLine>();
+        var tokenizedCollection = new List<PSTokenizedLine>();
         if (tokens is not null && tokens.Length != 0)
         {
-            foreach (var tokenCollection in tokens.GetPSDataFileLine())
+            foreach (var tokenizedLine in tokens.GetPSDataFileLine())
             {
-                tokenCollection.TrackChanges = true;
-                tokenCollections.Add(tokenCollection);
+                tokenizedLine.TrackChanges = true;
+                if (tokenizedLine.IsComment)
+                {
+                    tokenizedLine.GetCommentedText();
+                }
+
+                tokenizedCollection.Add(tokenizedLine);
             }
         }
 
-        return tokenCollections;
-    }
-
-    public static void Write(this PSDataFile dataFile)
-    {
-        var tempPath = Path.GetTempFileName();
-        using (var writer = new StreamWriter(tempPath))
-        {
-            writer.AutoFlush = true;
-        }
+        return tokenizedCollection;
     }
 
     private static IEnumerable<PSTokenizedLine> GetPSDataFileLine(this Token[] tokens)
@@ -107,7 +102,7 @@ internal static class DataExtensions
         }
     }
 
-    private static void ProcessToken(PSTokenEntry dataToken, PSTokenizedLine comment, ref int newIndex)
+    private static void ProcessToken(IPSTokenEntry dataToken, PSTokenizedLine comment, ref int newIndex)
     {
         if (dataToken.IsComment)
         {
@@ -121,7 +116,7 @@ internal static class DataExtensions
         }
     }
 
-    private static void ProcessComment(PSTokenEntry dataToken, PSTokenizedLine comment, ref int newIndex)
+    private static void ProcessComment(IPSTokenEntry dataToken, PSTokenizedLine comment, ref int newIndex)
     {
         var text = dataToken.Text.TrimStart('#').Trim();
         var ast = Parser.ParseFile(text, out Token[] tokens, out ParseError[] errors);
@@ -145,18 +140,6 @@ internal static class DataExtensions
             var dataToken = token.CreateDataToken(newIndex);
             comment.Add(dataToken);
             newIndex++;
-        }
-    }
-
-    private static void Write(this PSTokenEntry dataFileToken, StreamWriter writer)
-    {
-        if (dataFileToken.IsNewLine)
-        {
-            writer.WriteLine();
-        }
-        else
-        {
-            writer.Write(dataFileToken.ToString());
         }
     }
 }

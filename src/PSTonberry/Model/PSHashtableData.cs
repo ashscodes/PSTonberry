@@ -2,7 +2,7 @@ using System.Collections;
 using System.Management.Automation.Language;
 
 namespace PSTonberry.Model;
-internal abstract class PSHashtableData : PSTokenCollection<HashtableAst>
+internal abstract class PSHashtableData : PSTokenizedLineCollection<HashtableAst>
 {
     internal void Init(string astString)
     {

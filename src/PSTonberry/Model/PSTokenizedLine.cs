@@ -5,23 +5,29 @@ using System.Linq;
 
 namespace PSTonberry.Model;
 
-internal class PSTokenizedLine : ICollection<PSTokenEntry>
+internal class PSTokenizedLine : ICollection<IPSTokenEntry>
 {
-    private List<PSTokenEntry> _tokens = [];
+    private List<IPSTokenEntry> _tokens = [];
 
     public int Count => _tokens is not null ? _tokens.Count : 0;
-
-    public bool HasIdentifier => Count > 0 && _tokens.Any(t => t.IsIdentifier);
 
     public string Identifier => _tokens?.FirstOrDefault(t => t.IsIdentifier)?.Text;
 
     public int Indent { get; }
 
+    public bool IsClosingBrace => Count >= 2
+                                  && _tokens[Count - 2].IsClosingBrace
+                                  && _tokens[Count - 1].IsNewLine;
+
+    public bool IsClosingParentheses => Count >= 2
+                                        && _tokens[Count - 2].IsClosingParentheses
+                                        && _tokens[Count - 1].IsNewLine;
+
     public bool IsComment => IsMultiLineComment || IsSingleLineComment;
 
     public bool IsEmptyLine => Count == 1 && _tokens[0].IsNewLine;
 
-    public bool IsModified => (bool)(_tokens?.Any(t => t.IsModified));
+    public bool IsModified => _tokens is not null && _tokens.Any(t => t.IsModified());
 
     public bool IsMultiLineComment => Count > 2 && _tokens.All(t => t.IsComment || t.IsNewLine);
 
@@ -31,39 +37,39 @@ internal class PSTokenizedLine : ICollection<PSTokenEntry>
 
     public int Line { get; }
 
-    public HashSet<PSTokenEntry> TokensAdded { get; private set; } = [];
+    public bool ShouldWrapOnWrite => Values is object[] valueArray ? valueArray.Length > 3 : false;
 
-    public HashSet<PSTokenEntry> TokensModified { get; private set; } = [];
+    public HashSet<IPSTokenEntry> TokensAdded { get; private set; } = [];
 
-    public HashSet<PSTokenEntry> TokensRemoved { get; private set; } = [];
+    public HashSet<IPSTokenEntry> TokensModified { get; private set; } = [];
 
-    public bool WrapValues => Values is object[] valueArray ? valueArray.Length > 3 : false;
+    public HashSet<IPSTokenEntry> TokensRemoved { get; private set; } = [];
 
     public object Values
     {
         get
         {
-            if (Count > 0)
+            var valueTokens = GetValueTokens()?.ToArray();
+            if (valueTokens?.Length == 1)
             {
-                var tokens = _tokens.Where(token => Resources.ValueTokens.Contains(token.Kind));
-                if (tokens.Any())
-                {
-                    var valuesArray = new string[tokens.Count()];
-                    int count = 0;
-                    foreach (var token in tokens)
-                    {
-                        valuesArray[count] = token.GetValue();
-                    }
-
-                    return valuesArray;
-                }
+                return valueTokens[0].GetValue();
             }
 
-            return null;
+            return valueTokens?.Select(token => token.GetValue()).ToArray();
         }
     }
 
-    internal List<PSTokenEntry> Tokens { get; set; }
+    public IPSTokenEntry this[int index]
+    {
+        get => Count > 0 ? _tokens[index] : null;
+    }
+
+    internal PSTokenizedLine CommentContent { get; set; }
+
+    internal List<IPSTokenEntry> Tokens
+    {
+        get => _tokens ?? [];
+    }
 
     internal bool TrackChanges { get; set; } = false;
 
@@ -73,7 +79,7 @@ internal class PSTokenizedLine : ICollection<PSTokenEntry>
         Indent = indent;
     }
 
-    public void Add(PSTokenEntry token)
+    public void Add(IPSTokenEntry token)
     {
         _tokens?.Add(token);
         OnInsertComplete(token);
@@ -81,20 +87,34 @@ internal class PSTokenizedLine : ICollection<PSTokenEntry>
 
     public void Clear() => _tokens?.Clear();
 
-    public bool Contains(PSTokenEntry token) => _tokens.Contains(token);
+    public bool Contains(IPSTokenEntry token) => _tokens is not null && _tokens.Contains(token);
 
-    public void CopyTo(PSTokenEntry[] tokens, int offset) => _tokens?.CopyTo(tokens, offset);
+    public void CopyTo(IPSTokenEntry[] tokens, int offset) => _tokens?.CopyTo(tokens, offset);
 
-    public IEnumerator<PSTokenEntry> GetEnumerator() => _tokens?.GetEnumerator();
+    public IEnumerator<IPSTokenEntry> GetEnumerator() => _tokens?.GetEnumerator();
 
-    public bool Remove(PSTokenEntry token)
+    public bool IsIdentifierEqual(string identifier)
+        => IsIdentifierEqualInLine(identifier) || IsIdentifierEqualInComment(identifier);
+
+    public bool Remove(IPSTokenEntry token)
     {
         var result = _tokens.Remove(token);
         OnRemoveComplete(token);
         return result;
     }
 
-    internal virtual void OnInsertComplete(PSTokenEntry token)
+    private IEnumerable<IPSTokenEntry> GetValueTokens()
+        => _tokens?.Where(token => Resources.ValueTokens.Contains(token.Kind));
+
+    private bool IsIdentifierEqualInComment(string identifier)
+        => IsComment
+           && !string.IsNullOrEmpty(CommentContent.Identifier)
+           && CommentContent.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase);
+
+    private bool IsIdentifierEqualInLine(string identifier)
+        => !string.IsNullOrEmpty(Identifier) && Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase);
+
+    internal virtual void OnInsertComplete(IPSTokenEntry token)
     {
         if (TrackChanges)
         {
@@ -103,7 +123,7 @@ internal class PSTokenizedLine : ICollection<PSTokenEntry>
         }
     }
 
-    internal virtual void OnRemoveComplete(PSTokenEntry token)
+    internal virtual void OnRemoveComplete(IPSTokenEntry token)
     {
         if (TrackChanges)
         {

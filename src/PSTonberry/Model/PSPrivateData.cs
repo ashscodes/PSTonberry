@@ -1,5 +1,3 @@
-using System.IO;
-
 namespace PSTonberry.Model;
 
 internal class PSPrivateData : PSHashtableData
@@ -10,18 +8,12 @@ internal class PSPrivateData : PSHashtableData
 
     public PSPrivateData(string privateData)
     {
-        if (TryParseSection(privateData, Resources.TonberryData, out string tonberryDataStr))
+        if (TryParseSection(privateData, Resources.TonberryData, out string tonberryDataStr, out string newPrivateData))
         {
             TonberryData = new PSTonberryData(tonberryDataStr);
-            privateData = privateData.Replace(tonberryDataStr, null);
         }
 
-        Init(privateData);
-    }
-
-    public override void Write(StreamWriter writer)
-    {
-        throw new System.NotImplementedException();
+        Init(newPrivateData);
     }
 
     internal bool TryUpdateTonberryData(PSHashtable tonberryConfig)

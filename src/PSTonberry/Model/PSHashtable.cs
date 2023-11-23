@@ -4,7 +4,7 @@ using System.Text;
 
 namespace PSTonberry.Model;
 
-public class PSHashtable
+internal class PSHashtable
 {
     private Hashtable _hashtable;
 

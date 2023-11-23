@@ -4,11 +4,11 @@ using System.Management.Automation.Language;
 
 namespace PSTonberry.Model;
 
-internal class PSDataFile : PSTokenCollection<ScriptBlockAst>
+internal class PSDataFile : PSTokenizedLineCollection<ScriptBlockAst>
 {
     public bool HasPrivateData => !HasError && PrivateData is not null;
 
-    public FileInfo Path { get; set; }
+    public FileInfo Module { get; set; }
 
     public PSPrivateData PrivateData { get; set; }
 
@@ -16,14 +16,22 @@ internal class PSDataFile : PSTokenCollection<ScriptBlockAst>
 
     public PSDataFile(string filePath)
     {
-        Path = new FileInfo(filePath);
-        Root = Path.Directory;
+        Module = new FileInfo(filePath);
+        Root = Module.Directory;
         Init(filePath);
     }
 
-    public override void Write(StreamWriter writer)
+    public void Write()
     {
-        throw new NotImplementedException();
+        var tempPath = Path.GetTempFileName();
+        using (var writer = new StreamWriter(tempPath))
+        {
+            writer.AutoFlush = true;
+            foreach (var line in Lines)
+            {
+                // rewrite file.
+            }
+        }
     }
 
     private void Init(string filePath)
@@ -38,13 +46,12 @@ internal class PSDataFile : PSTokenCollection<ScriptBlockAst>
         }
 
         var dataFileStr = fileAst.ToString();
-        if (TryParseSection(dataFileStr, Resources.PrivateData, out string privateDataStr))
+        if (TryParseSection(dataFileStr, Resources.PrivateData, out string privateDataStr, out string newDataFile))
         {
             PrivateData = new PSPrivateData(privateDataStr);
-            dataFileStr = dataFileStr.Replace(privateDataStr, null);
         }
 
-        if (TryGetAstFromString(dataFileStr, out ScriptBlockAst scriptBlockAst, out tokens))
+        if (TryGetAstFromString(newDataFile, out ScriptBlockAst scriptBlockAst, out tokens))
         {
             Ast = scriptBlockAst;
             Lines = tokens.ToTokenizedLines();

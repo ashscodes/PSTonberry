@@ -5,7 +5,7 @@ namespace PSTonberry;
 
 internal static class TokenExtensions
 {
-    public static PSTokenEntry CreateDataToken(this Token token, int index)
+    public static IPSTokenEntry CreateDataToken(this Token token, int index)
     {
         return token switch
         {
