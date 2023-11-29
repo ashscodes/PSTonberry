@@ -14,6 +14,10 @@
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PSDataFileHelper\PSDataFileHelper.csproj" />
+  </ItemGroup>
+
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <LangVersion>preview</LangVersion>
