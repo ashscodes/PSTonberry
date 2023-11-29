@@ -9,6 +9,10 @@ public interface IAstMap : IAstCollection
     ICollection<string> Keys { get; }
 
     IAstObject this[string keyName] { get; set; }
+
+    bool ContainsSection(string sectionName);
+
+    DataSection GetSection(string sectionName);
 }
 
 public interface IAstKeyValuePair : IAstObject, IAstObjectValue

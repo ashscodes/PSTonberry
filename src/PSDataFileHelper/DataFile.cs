@@ -26,7 +26,7 @@ public class DataFileContent : AstMap
 {
     public PrivateData PrivateData
     {
-        get => (PrivateData)GetDataSection(nameof(PrivateData));
+        get => (PrivateData)GetSection(nameof(PrivateData));
     }
 
     public override string ToString()

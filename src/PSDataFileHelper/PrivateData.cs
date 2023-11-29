@@ -4,7 +4,7 @@ public sealed class PrivateData : DataSection
 {
     public PSData PSData
     {
-        get => (PSData)GetDataSection(nameof(PSData));
+        get => (PSData)GetSection(nameof(PSData));
     }
 
     public PrivateData() : base(nameof(PrivateData)) { }

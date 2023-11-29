@@ -52,7 +52,7 @@ public abstract class AstMap : IAstMap
 
     public void CopyTo(IAstObject[] array, int offset) => _mapItems?.CopyTo(array, offset);
 
-    public DataSection GetDataSection(string sectionName)
+    public DataSection GetSection(string sectionName)
     {
         if (ContainsSection(sectionName))
         {
