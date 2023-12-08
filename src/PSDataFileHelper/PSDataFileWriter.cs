@@ -3,7 +3,7 @@ using System.IO;
 
 namespace PSDataFileHelper;
 
-public sealed class DataFileWriter : IDisposable
+public sealed class PSDataFileWriter : IDisposable
 {
     private int _indentation;
 
@@ -13,7 +13,7 @@ public sealed class DataFileWriter : IDisposable
 
     private StreamWriter _writer;
 
-    public DataFileWriter(string filePath)
+    public PSDataFileWriter(string filePath)
     {
         _indentation = 0;
         _targetPath = filePath;
@@ -31,13 +31,13 @@ public sealed class DataFileWriter : IDisposable
         }
     }
 
-    public void WriteFile(IAstObject astObject)
+    public void WriteFile(IPSDataFileObject astObject)
     {
         Write(astObject);
         WriteLine(astObject);
     }
 
-    private void Write(IAstObject astObject)
+    private void Write(IPSDataFileObject astObject)
     {
         _writer.Write(true);
     }
@@ -45,7 +45,7 @@ public sealed class DataFileWriter : IDisposable
     private string GetIndent()
         => _indentation != 0 ? new string(' ', _indentation) : string.Empty;
 
-    private void WriteLine(IAstObject astObject)
+    private void WriteLine(IPSDataFileObject astObject)
     {
         _writer.WriteLine();
     }

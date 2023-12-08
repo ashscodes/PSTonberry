@@ -1,11 +1,8 @@
 namespace PSDataFileHelper;
 
-public sealed class PSData : DataSection
+public sealed class PSData : PSDataFileSection
 {
     public PSData() : base(nameof(PSData)) { }
 
-    public override string ToString()
-    {
-        throw new System.NotImplementedException();
-    }
+    public PSData(string originalText) : base(nameof(PSData), originalText) { }
 }

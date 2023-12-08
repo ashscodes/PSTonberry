@@ -1,16 +1,10 @@
 namespace PSDataFileHelper;
 
-public sealed class PrivateData : DataSection
+public sealed class PrivateData : PSDataFileSection
 {
-    public PSData PSData
-    {
-        get => (PSData)GetSection(nameof(PSData));
-    }
+    public PSData PSData { get; set; }
 
     public PrivateData() : base(nameof(PrivateData)) { }
 
-    public override string ToString()
-    {
-        throw new System.NotImplementedException();
-    }
+    public PrivateData(string originalText) : base(nameof(PrivateData), originalText) { }
 }
