@@ -92,3 +92,6 @@ csx/
 
 # Local History for Visual Studio
 .localhistory/
+
+# MacOS files
+.DS_Store
