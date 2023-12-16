@@ -5,15 +5,12 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSTonberry", "PSTonberry\PSTonberry.csproj", "{CACA9D70-4BCB-4C6B-A762-FF3916E372D8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSDataFileHelper", "PSDataFileHelper\PSDataFileHelper.csproj", "{315A26E6-FCEE-40C9-B360-472E23C2EB9C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyPSD", "EasyPSD\EasyPSD.csproj", "{315A26E6-FCEE-40C9-B360-472E23C2EB9C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{CACA9D70-4BCB-4C6B-A762-FF3916E372D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -24,5 +21,8 @@ Global
 		{315A26E6-FCEE-40C9-B360-472E23C2EB9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{315A26E6-FCEE-40C9-B360-472E23C2EB9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{315A26E6-FCEE-40C9-B360-472E23C2EB9C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

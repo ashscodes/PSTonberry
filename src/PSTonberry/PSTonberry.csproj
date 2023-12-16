@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PSDataFileHelper\PSDataFileHelper.csproj" />
+    <ProjectReference Include="../EasyPSD/EasyPSD.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
