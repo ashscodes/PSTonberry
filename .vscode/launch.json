@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "EasyPSD Debugger",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "publish",
+      "program": "pwsh",
+      "args": [
+        "-NoExit",
+        "-NoProfile",
+        "-Command",
+        "& { ",
+        "Add-Type -Path src/EasyPSD/bin/Debug/net7.0/EasyPSD.dll;",
+        "}"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "stopAtEntry": false
+    },
+    {
+      "name": ".NET Core Attach",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
+}

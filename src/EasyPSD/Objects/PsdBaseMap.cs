@@ -8,6 +8,22 @@ namespace EasyPSD;
 
 public abstract class PsdBaseMap : PsdBaseCollection
 {
+    private string _name;
+
+    public virtual string Name
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_name))
+            {
+                _name = GetType().Name;
+            }
+
+            return _name;
+        }
+        set => _name = value;
+    }
+
     public List<PsdNamedMap> NamedMaps { get; set; } = [];
 
     public PsdBaseMap() { }
@@ -54,6 +70,8 @@ public abstract class PsdBaseMap : PsdBaseCollection
 
         return false;
     }
+
+    public override string ToString() => GetType().Name;
 
     public virtual void AddArray(string name, object[] values)
     {
@@ -210,12 +228,12 @@ public abstract class PsdBaseMap : PsdBaseCollection
 
     internal static string RemoveQuotationCharacter(string value, char symbol)
     {
-        if (value.StartsWith(symbol))
+        if (value[0] == symbol)
         {
             value = value.TrimStart(symbol);
         }
 
-        if (value.EndsWith(symbol))
+        if (value[^1] == symbol)
         {
             value = value.TrimEnd(symbol);
         }
@@ -225,12 +243,12 @@ public abstract class PsdBaseMap : PsdBaseCollection
 
     internal static string RemoveVariableCharacter(string value)
     {
-        if (value.StartsWith('@'))
+        if (value[0] == '@')
         {
             value = value.TrimStart('@');
         }
 
-        if (value.StartsWith('$'))
+        if (value[0] == '$')
         {
             value = value.TrimStart('$');
         }

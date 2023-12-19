@@ -13,7 +13,10 @@ public sealed class CommentValue : BaseStringValue, IPsdValueSpacing
 
     public bool IsMultiLine => GetValue().StartsWith("<#");
 
-    public CommentValue(string value) : base(value) { }
+    public CommentValue(string value, bool hasPrecedingEmptyLine = false) : base(value)
+    {
+        HasPrecedingEmptyLine = hasPrecedingEmptyLine;
+    }
 
     internal CommentValue(StringToken token) : base(token) { }
 
@@ -147,4 +150,16 @@ public abstract class BaseStringValue : IPsdInlineComment, IPsdValue<string>
     }
 
     public override string ToString() => GetValue();
+
+    public static BaseStringValue Create(StringToken token)
+    {
+        if (token.Kind == TokenKind.HereStringExpandable || token.Kind == TokenKind.StringExpandable)
+        {
+            return new DoubleQuotedString(token);
+        }
+        else
+        {
+            return new SingleQuotedString(token);
+        }
+    }
 }

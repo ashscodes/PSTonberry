@@ -1,12 +1,9 @@
-using System;
 using System.Management.Automation.Language;
 
 namespace EasyPSD;
 
 public sealed class NumberValue : IPsdInlineComment, IPsdValue<decimal?>
 {
-    private Type _initialType;
-
     private decimal? _value;
 
     public CommentValue Comment { get; set; } = null;

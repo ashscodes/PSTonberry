@@ -11,6 +11,7 @@ indent_style = space
 # Analysers
 dotnet_diagnostic.CA1822.severity = none
 dotnet_diagnostic.CA2211.severity = none
+dotnet_diagnostic.CS3021.severity = none
 dotnet_diagnostic.IDE0200.severity = none
 dotnet_diagnostic.IDE0290.severity = none
 

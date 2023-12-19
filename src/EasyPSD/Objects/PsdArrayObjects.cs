@@ -4,6 +4,8 @@ namespace EasyPSD;
 
 public sealed class PsdArrayExpression : PsdArray
 {
+    public bool HasAtSymbol { get; set; }
+
     public PsdArrayExpression() { }
 }
 

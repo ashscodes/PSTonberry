@@ -5,7 +5,7 @@ namespace EasyPSD;
 
 public abstract class PsdBaseCollection : IPsdCollection<IPsdObject>, IPsdInlineComment
 {
-    private protected List<IPsdObject> _items;
+    private protected List<IPsdObject> _items = [];
 
     public CommentValue Comment { get; set; } = null;
 
@@ -27,7 +27,7 @@ public abstract class PsdBaseCollection : IPsdCollection<IPsdObject>, IPsdInline
 
     public PsdBaseCollection() { }
 
-    public void Add(IPsdObject item) => _items?.Add(item);
+    public void Add(IPsdObject item) => _items.Add(item);
 
     public void Clear() => _items.Clear();
 

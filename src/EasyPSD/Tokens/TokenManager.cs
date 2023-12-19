@@ -1,38 +1,41 @@
 using System;
-using System.Linq;
 using System.Management.Automation.Language;
 
 namespace EasyPSD;
 
-public partial class TokenManager
+public class TokenManager
 {
-    private int _consecutiveNewLines;
-
     private Token[] _tokens;
+
+    public int ConsecutiveNewLines;
 
     public int Count => _tokens is not null ? _tokens.Length : 0;
 
     public Token Current => (Count <= 0 || (Index < 0 || Index > Count)) ? null : this[Index];
 
+    public bool HasPrecedingNewLine => Previous is not null ? Previous.Kind == TokenKind.NewLine : false;
+
     public int Index { get; private set; }
 
-    public Token Last => Index - 1 < 0 ? null : this[Index - 1];
+    public bool InScriptblock { get; private set; }
 
     public Token Next => Index + 1 > Count ? null : this[Index + 1];
 
+    public Token Previous => Index - 1 < 0 ? null : this[Index - 1];
+
     public Token this[int index] => _tokens[index];
 
-    public TokenManager() => _consecutiveNewLines = Index = 0;
+    public TokenManager() => ConsecutiveNewLines = Index = 0;
 
     public void ConsumeToken()
     {
         if (_tokens[Index].Kind is TokenKind.NewLine)
         {
-            _consecutiveNewLines++;
+            ConsecutiveNewLines++;
         }
         else
         {
-            _consecutiveNewLines = 0;
+            ConsecutiveNewLines = 0;
         }
 
         Index++;
@@ -59,21 +62,18 @@ public partial class TokenManager
         return _tokens[index..(index + count)];
     }
 
-    public bool IsArrayLiteral() => PeekTokens(ArrayLiteral);
+    public bool IsArrayLiteral() => PeekTokens(TokenLookAhead.ArrayLiteral);
 
-    public bool IsDataFileSection() => PeekTokens(NamedMap);
+    public bool IsDoubleQuotedString() => PeekTokens([TokenLookAhead.DoubleQuotedStringTokens]);
 
-    public bool IsDoubleQuotedString() => PeekTokens([DoubleQuotedStringTokens]);
+    public bool IsInlineComment() =>
+        PeekTokens(TokenLookAhead.InlineComment) || PeekTokens(TokenLookAhead.InlineCommentWithComma);
 
-    public bool IsInlineComment() => PeekTokens(InlineComment);
+    public bool IsLineTerminator() => PeekTokens([TokenLookAhead.LineTerminator]);
 
-    public bool IsLineTerminator() => PeekTokens([LineTerminator]);
+    public bool IsMapEntry() => PeekTokens(TokenLookAhead.MapEntry);
 
-    public bool IsNamedArray() => PeekTokens(NamedArray);
-
-    public bool IsNamedMap() => PeekTokens(NamedMap);
-
-    public bool IsSimpleMapEntry() => PeekTokens(SimpleMapEntry);
+    public bool IsSimpleValue() => PeekTokens(TokenLookAhead.SimpleValue);
 
     public bool PeekTokens(TokenKind[][] tokenKindSet)
     {
@@ -86,8 +86,8 @@ public partial class TokenManager
 
         for (int i = 0; i < tokenKindSet.Length; i++)
         {
-            var tokenKind = _tokens[Index + i].Kind;
-            if (tokenKindSet[i].Length == 0 || !tokenKindSet[i].Contains(tokenKind))
+            var token = _tokens[Index + i];
+            if (!token.IsOneOf(tokenKindSet[i]))
             {
                 return false;
             }
