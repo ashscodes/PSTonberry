@@ -2,7 +2,7 @@ using System.Management.Automation.Language;
 
 namespace EasyPSD;
 
-public sealed class BooleanValue : IPsdInlineComment, IPsdValue<bool?>
+public sealed class BooleanValue : BaseValue, IPsdCondition, IPsdInlineComment, IPsdValue<bool?>
 {
     private bool? _value;
 
@@ -12,9 +12,9 @@ public sealed class BooleanValue : IPsdInlineComment, IPsdValue<bool?>
 
     public bool HasValue => _value.HasValue;
 
-    public bool IsCollection => false;
+    public override bool IsCollection => false;
 
-    public bool IsReadOnly { get; set; }
+    public override bool IsReadOnly { get; set; }
 
     public BooleanValue() { }
 
@@ -46,4 +46,6 @@ public sealed class BooleanValue : IPsdInlineComment, IPsdValue<bool?>
                 return false;
         }
     }
+
+    string IPsdCondition.GetValue() => GetValue()?.ToString();
 }

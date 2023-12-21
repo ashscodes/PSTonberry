@@ -17,12 +17,18 @@ public abstract class PsdBaseCollection : IPsdCollection<IPsdObject>, IPsdInline
 
     public bool IsReadOnly { get; set; } = false;
 
-    public string OriginalText { get; set; }
-
     public IPsdObject this[int index]
     {
-        get => _items[index];
-        set => _items[index] = value;
+        get
+        {
+            Ensure.IndexIsInRange(index, Count);
+            return _items[index];
+        }
+        set
+        {
+            Ensure.IndexIsInRange(index, Count);
+            _items[index] = value;
+        }
     }
 
     public PsdBaseCollection() { }

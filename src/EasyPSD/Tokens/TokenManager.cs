@@ -15,9 +15,9 @@ public class TokenManager
 
     public bool HasPrecedingNewLine => Previous is not null ? Previous.Kind == TokenKind.NewLine : false;
 
-    public int Index { get; private set; }
+    public int Index { get; internal set; }
 
-    public bool InScriptblock { get; private set; }
+    public bool InScriptblock { get; internal set; }
 
     public Token Next => Index + 1 > Count ? null : this[Index + 1];
 
@@ -63,6 +63,17 @@ public class TokenManager
     }
 
     public bool IsArrayLiteral() => PeekTokens(TokenLookAhead.ArrayLiteral);
+
+    public bool IsComplexCondition()
+    {
+        if (Current.IsArrayStart())
+        {
+            ConsumeToken();
+            return PeekTokensInCondition(t => t.IsLogicalOperator());
+        }
+
+        return false;
+    }
 
     public bool IsDoubleQuotedString() => PeekTokens([TokenLookAhead.DoubleQuotedStringTokens]);
 
@@ -118,5 +129,32 @@ public class TokenManager
             error = ex;
             return false;
         }
+    }
+
+    private bool PeekTokensInCondition(Func<Token, bool> lookahead)
+    {
+        int tempIndex = Index;
+        int nestedArray = 0;
+        while (!Current.IsArrayClose() && nestedArray != 0)
+        {
+            if (lookahead(_tokens[tempIndex]))
+            {
+                return true;
+            }
+
+            if (_tokens[tempIndex].IsArrayStart())
+            {
+                nestedArray++;
+            }
+
+            if (_tokens[tempIndex].IsArrayClose())
+            {
+                nestedArray--;
+            }
+
+            tempIndex++;
+        }
+
+        return false;
     }
 }

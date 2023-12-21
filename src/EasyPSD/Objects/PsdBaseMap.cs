@@ -26,6 +26,8 @@ public abstract class PsdBaseMap : PsdBaseCollection
 
     public List<PsdNamedMap> NamedMaps { get; set; } = [];
 
+    public string OriginalText { get; set; }
+
     public PsdBaseMap() { }
 
     public bool ContainsKey(string key)

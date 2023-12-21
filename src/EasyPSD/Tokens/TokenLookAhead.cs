@@ -6,7 +6,6 @@ namespace EasyPSD;
 
 public static class TokenLookAhead
 {
-
     #region TokenKindSets
 
     public static TokenKind[] BasicStringTokens =

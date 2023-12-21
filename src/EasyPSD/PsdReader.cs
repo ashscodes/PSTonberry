@@ -65,6 +65,7 @@ public sealed class PsdReader
             {
                 if (_maps is not null && _maps.Count == 1 && _maps.Peek() is PsdFile)
                 {
+                    _maps.Peek().Add(_psdFile.Data);
                     _maps.Push(_psdFile.Data);
                     Tokens.ConsumeToken();
                 }
@@ -107,8 +108,10 @@ public sealed class PsdReader
         {
             var arrayValue = ReadArrayValue();
             array.Add(arrayValue);
+            TestForArrayClose();
         }
 
+        Tokens.ConsumeToken();
         TestForInlineComment(array);
         return array;
     }
@@ -116,23 +119,19 @@ public sealed class PsdReader
     private PsdArrayLiteral ReadArrayLiteral()
     {
         var array = new PsdArrayLiteral();
-        Tokens.ConsumeToken();
+        bool isArrayEnd;
         do
         {
             var arrayValue = ReadArrayValue();
             array.Add(arrayValue);
-            if (Tokens.Current.Is(TokenKind.Comma))
-            {
-                Tokens.ConsumeToken();
-            }
-        } while ((Tokens.Current.Is(TokenKind.NewLine) && Tokens.Previous.IsNot(TokenKind.Comma))
-            || Tokens.Next.IsNot(TokenKind.Comma));
+            isArrayEnd = TestForArrayClose();
+        }
+        while (!isArrayEnd);
 
         TestForInlineComment(array);
         return array;
     }
 
-    // Need to investigate flow of values returned.
     private IPsdObject ReadArrayValue()
     {
         IPsdObject value = null;
@@ -195,7 +194,6 @@ public sealed class PsdReader
         IPsdObject value = null;
         if (Tokens.Current.IsArrayStart())
         {
-            Tokens.ConsumeToken();
             value = ReadArrayExpression();
         }
         else if (Tokens.IsArrayLiteral())
@@ -208,7 +206,7 @@ public sealed class PsdReader
         }
         else if (Tokens.Current.IsKeyword())
         {
-            value = ReadScriptblock();
+            value = ReadKeywordBlock();
         }
         else if (Tokens.IsSimpleValue())
         {
@@ -241,7 +239,6 @@ public sealed class PsdReader
 
     private NumberValue ReadNumber(NumberToken numberToken) => new NumberValue(numberToken);
 
-    // Need to see if we should check for NewLine here.
     private IPsdObject ReadPsdObject()
     {
         IPsdObject value = null;
@@ -261,21 +258,101 @@ public sealed class PsdReader
         return value;
     }
 
-    private PsdScriptblock ReadScriptblock()
+    private PsdKeyword ReadKeywordBlock()
     {
-        throw new NotImplementedException();
+        PsdKeyword keywordBlock = new(Tokens.Current.Text);
+        Tokens.ConsumeToken();
+        if (Tokens.Current.IsNewLine())
+        {
+            Tokens.ConsumeToken();
+        }
+
+        if (Tokens.Current.IsArrayStart())
+        {
+            keywordBlock.Condition = ReadKeywordConditions();
+        }
+        else if (Tokens.Current.Is(TokenKind.LCurly))
+        {
+            keywordBlock.Scriptblock = ReadKeywordScriptblock();
+        }
+
+        return keywordBlock;
+    }
+
+    private PsdConditionCollection ReadKeywordConditions()
+    {
+        var initialCondition = new PsdConditionCollection(Tokens.Current);
+        var conditions = new Stack<PsdConditionCollection>();
+        conditions.Push(initialCondition);
+        Tokens.ConsumeToken();
+
+        while (conditions.Count != 0)
+        {
+            if (Tokens.Current.IsArrayStart())
+            {
+                conditions.Push(new PsdConditionCollection(Tokens.Current));
+            }
+            else if (Tokens.Current.IsArrayClose())
+            {
+                var condition = conditions.Pop();
+                TestForInlineComment(condition);
+            }
+            else if (Tokens.Current.IsNewLine() || Tokens.Current.Is(TokenKind.Comma))
+            {
+                // Just consume the token
+            }
+            else
+            {
+                var simpleValue = ReadSimpleValue();
+                if (simpleValue is IPsdCondition conditionObject)
+                {
+                    conditions.Peek().Add(conditionObject);
+                }
+            }
+
+            Tokens.ConsumeToken();
+        }
+
+        return initialCondition;
+    }
+
+    private PsdScriptblock ReadKeywordScriptblock()
+    {
+        int nestedScriptBlocks = 0;
+        var scriptblock = new PsdScriptblock();
+        Tokens.ConsumeToken();
+        Tokens.InScriptblock = true;
+        while (Tokens.InScriptblock)
+        {
+            if (Tokens.Current.IsScriptblockStart())
+            {
+                nestedScriptBlocks++;
+            }
+
+            if (Tokens.Current.IsMapClose())
+            {
+                nestedScriptBlocks--;
+                if (nestedScriptBlocks == 0)
+                {
+                    Tokens.InScriptblock = false;
+                }
+            }
+
+            if (!Tokens.Current.IsNewLine())
+            {
+                scriptblock.Add(ReadSimpleValue());
+            }
+
+            Tokens.ConsumeToken();
+        }
+
+        TestForInlineComment(scriptblock);
+        return scriptblock;
     }
 
     private IPsdObject ReadSimpleValue()
     {
-        IPsdObject value = Tokens.Current switch
-        {
-            NumberToken numberToken => ReadNumber(numberToken),
-            StringToken stringToken => ReadString(stringToken),
-            VariableToken variableToken => ReadVariable(variableToken),
-            _ => throw new PsdReaderException(Tokens.Current.Text, Tokens.Index)
-        };
-
+        var value = BaseValue.Create(Tokens.Current);
         Tokens.ConsumeToken();
         TestForInlineComment(value);
         return value;
@@ -293,6 +370,29 @@ public sealed class PsdReader
         return new VariableValue(variableToken);
     }
 
+    private bool TestForArrayClose()
+    {
+        if (Tokens.Current.Is(TokenKind.Comma))
+        {
+            Tokens.ConsumeToken();
+        }
+
+        if (Tokens.Current.IsNewLine())
+        {
+            Tokens.ConsumeToken();
+        }
+
+        if (Tokens.IsSimpleValue()
+            || Tokens.Current.IsComment()
+            || Tokens.Current.IsArrayStart()
+            || Tokens.Current.IsMapStart())
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     private void TestForInlineComment(IPsdObject value)
     {
         if (Tokens.IsInlineComment() && value is IPsdInlineComment inlineComment)
@@ -306,15 +406,12 @@ public sealed class PsdReader
         var psdObject = ReadPsdObject();
         if (psdObject is not null)
         {
+            _maps.Peek().Add(psdObject);
+
             if (psdObject is PsdMapEntry mapEntry && mapEntry.GetValue() is PsdNamedMap namedMap)
             {
                 _maps.Peek().NamedMaps.Add(namedMap);
                 _maps.Push(namedMap);
-            }
-            else
-            {
-                var currentMap = _maps.Peek();
-                currentMap.Add(psdObject);
             }
         }
     }

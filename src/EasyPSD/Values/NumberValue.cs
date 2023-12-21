@@ -2,7 +2,7 @@ using System.Management.Automation.Language;
 
 namespace EasyPSD;
 
-public sealed class NumberValue : IPsdInlineComment, IPsdValue<decimal?>
+public sealed class NumberValue : BaseValue, IPsdCondition, IPsdInlineComment, IPsdValue<decimal?>
 {
     private decimal? _value;
 
@@ -12,9 +12,9 @@ public sealed class NumberValue : IPsdInlineComment, IPsdValue<decimal?>
 
     public bool HasValue => _value.HasValue;
 
-    public bool IsCollection => false;
+    public override bool IsCollection => false;
 
-    public bool IsReadOnly { get; set; }
+    public override bool IsReadOnly { get; set; }
 
     public NumberValue() { }
 
@@ -58,4 +58,6 @@ public sealed class NumberValue : IPsdInlineComment, IPsdValue<decimal?>
                 return false;
         }
     }
+
+    string IPsdCondition.GetValue() => GetValue()?.ToString();
 }

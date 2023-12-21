@@ -19,4 +19,62 @@ internal class Resources
     public const string RangesNotEqual = "Cannot compare a set of items, because they do not have an equal number of comparisons. First '{0}'; Second '{1}'";
 
     public const string StringIsNullOrEmpty = "The value provided for property '{0}' is null or empty.";
+
+    #region Operators
+
+    public static readonly string[] ComparisonOperators =
+    [
+        "-eq",
+        "-ieq",
+        "-ceq",
+        "-ne",
+        "-ine",
+        "-cne",
+        "-gt",
+        "-igt",
+        "-cgt",
+        "-ge",
+        "-ige",
+        "-cge",
+        "-lt",
+        "-ilt",
+        "-clt",
+        "-le",
+        "-ile",
+        "-cle",
+        "-like",
+        "-ilike",
+        "-clike",
+        "-notlike",
+        "-inotlike",
+        "-cnotlike",
+        "-match",
+        "-imatch",
+        "-cmatch",
+        "-notmatch",
+        "-inotmatch",
+        "-cnotmatch",
+        "-replace",
+        "-ireplace",
+        "-creplace",
+        "-contains",
+        "-icontains",
+        "-ccontains",
+        "-notcontains",
+        "-inotcontains",
+        "-cnotcontains",
+        "-in",
+        "-notin",
+        "-is",
+        "-isnot"
+    ];
+
+    public static readonly string[] LogicalOperators =
+    [
+        "-and",
+        "-or",
+        "-xor"
+    ];
+
+    #endregion Operators
 }

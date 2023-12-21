@@ -38,5 +38,7 @@ public class PsdMapEntry : IPsdValueSpacing
         return false;
     }
 
+    public override string ToString() => Key;
+
     private static bool CanSetValue(IPsdObject value) => value is not PsdMapEntry;
 }

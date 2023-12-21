@@ -1,10 +1,8 @@
-using System.Collections.Generic;
-
 namespace EasyPSD;
 
 public sealed class PsdKeyword : IPsdObject
 {
-    public List<PsdKeywordCondition> Condition { get; set; }
+    public PsdConditionCollection Condition { get; set; }
 
     public bool HasCondition => Condition is not null && Condition.Count > 0;
 
@@ -14,7 +12,7 @@ public sealed class PsdKeyword : IPsdObject
 
     public string Keyword { get; set; }
 
-    public PsdKeyword() => Condition = [];
+    public PsdScriptblock Scriptblock { get; set; }
 
-    public PsdKeyword(string keyword) : this() => Keyword = keyword;
+    public PsdKeyword(string keyword) => Keyword = keyword;
 }

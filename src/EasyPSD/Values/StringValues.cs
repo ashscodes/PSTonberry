@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Management.Automation.Language;
 
 namespace EasyPSD;
@@ -27,11 +28,22 @@ public sealed class CommentValue : BaseStringValue, IPsdValueSpacing
     }
 }
 
-public sealed class ScriptblockValue : BaseStringValue
+public sealed class ComparisonCondition : BaseStringValue
 {
-    public ScriptblockValue(string value) : base(value) { }
+    public ComparisonCondition(string value) : base(value) { }
 
-    internal ScriptblockValue(StringToken token) : base(token) { }
+    public override bool TrySetValue(object value)
+    {
+        if (value is string stringValue)
+        {
+            if (Resources.ComparisonOperators.Contains(stringValue, StringComparer.OrdinalIgnoreCase))
+            {
+                _value = stringValue;
+            }
+        }
+
+        return false;
+    }
 }
 
 public sealed class DoubleQuotedString : BaseStringValue
@@ -49,6 +61,31 @@ public sealed class DoubleQuotedString : BaseStringValue
 
         return "\"" + GetValue() + "\"";
     }
+}
+
+public sealed class LogicalCondition : BaseStringValue
+{
+    public LogicalCondition(string value) : base(value) { }
+
+    public override bool TrySetValue(object value)
+    {
+        if (value is string stringValue)
+        {
+            if (Resources.LogicalOperators.Contains(stringValue, StringComparer.OrdinalIgnoreCase))
+            {
+                _value = stringValue;
+            }
+        }
+
+        return false;
+    }
+}
+
+public sealed class ScriptblockValue : BaseStringValue
+{
+    public ScriptblockValue(string value) : base(value) { }
+
+    internal ScriptblockValue(StringToken token) : base(token) { }
 }
 
 public sealed class SingleQuotedString : BaseStringValue
@@ -92,9 +129,9 @@ public sealed class VariableValue : BaseStringValue
     }
 }
 
-public abstract class BaseStringValue : IPsdInlineComment, IPsdValue<string>
+public abstract class BaseStringValue : BaseValue, IPsdCondition, IPsdInlineComment, IPsdValue<string>
 {
-    private string _value;
+    protected internal string _value;
 
     public CommentValue Comment { get; set; } = null;
 
@@ -102,34 +139,30 @@ public abstract class BaseStringValue : IPsdInlineComment, IPsdValue<string>
 
     public bool HasValue => !string.IsNullOrEmpty(_value);
 
-    public bool IsCollection => false;
-
     public bool IsHereString { get; set; } = false;
 
-    public bool IsReadOnly { get; internal set; } = false;
+    public override bool IsCollection => false;
 
-    public BaseStringValue(string value)
-    {
-        if (!TrySetValue(value))
-        {
-            throw new ArgumentException(string.Format(Resources.CouldNotSetValue, typeof(string)), nameof(value));
-        }
-    }
+    public override bool IsReadOnly { get; set; } = false;
+
+    public BaseStringValue(string value) => SetValue(value);
 
     protected BaseStringValue(StringToken token)
     {
-        if (!TrySetValue(token.Value))
-        {
-            throw new ArgumentException(string.Format(Resources.CouldNotSetValue, typeof(string)), nameof(token));
-        }
-
+        SetValue(token.Value);
         IsHereString = token.Kind is TokenKind.HereStringExpandable
             || token.Kind is TokenKind.HereStringLiteral;
     }
 
-    public virtual string GetValue() => _value;
+    public string GetValue() => _value;
 
-    public virtual void SetValue(string value) => _value = value;
+    public virtual void SetValue(string value)
+    {
+        if (!TrySetValue(value))
+        {
+            throw new ArgumentException(string.Format(Resources.CouldNotSetValue, GetType().Name), nameof(value));
+        }
+    }
 
     public virtual bool TrySetValue(object value)
     {
