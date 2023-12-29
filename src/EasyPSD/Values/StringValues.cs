@@ -39,6 +39,7 @@ public sealed class ComparisonCondition : BaseStringValue
             if (Resources.ComparisonOperators.Contains(stringValue, StringComparer.OrdinalIgnoreCase))
             {
                 _value = stringValue;
+                return true;
             }
         }
 
@@ -74,6 +75,7 @@ public sealed class LogicalCondition : BaseStringValue
             if (Resources.LogicalOperators.Contains(stringValue, StringComparer.OrdinalIgnoreCase))
             {
                 _value = stringValue;
+                return true;
             }
         }
 

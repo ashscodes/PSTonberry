@@ -187,6 +187,107 @@ public sealed class PsdReader
         return identifier;
     }
 
+    private PsdKeyword ReadKeyword()
+    {
+        var keyword = new PsdKeyword(Tokens.Current.Text);
+        Tokens.ConsumeToken();
+        if (Tokens.Current.IsNewLine())
+        {
+            Tokens.ConsumeToken();
+        }
+
+        if (Tokens.Current.IsArrayStart())
+        {
+            keyword.Condition = ReadKeywordConditions();
+        }
+
+        if (Tokens.Current.Is(TokenKind.LCurly))
+        {
+            keyword.Scriptblock = ReadKeywordScriptblock();
+        }
+
+        return keyword;
+    }
+
+    private PsdConditionCollection ReadKeywordConditions()
+    {
+        var initialCondition = new PsdConditionCollection(Tokens.Current);
+        var conditions = new Stack<PsdConditionCollection>();
+        conditions.Push(initialCondition);
+        Tokens.ConsumeToken();
+
+        while (conditions.Count != 0)
+        {
+            if (Tokens.Current.IsArrayStart())
+            {
+                conditions.Push(new PsdConditionCollection(Tokens.Current));
+                Tokens.ConsumeToken();
+            }
+            else if (Tokens.Current.IsArrayClose())
+            {
+                var condition = conditions.Pop();
+                TestForInlineComment(condition);
+                if (conditions.Count != 0)
+                {
+                    initialCondition.Add(condition);
+                }
+
+                Tokens.ConsumeToken();
+            }
+            else if (Tokens.Current.IsNewLine() || Tokens.Current.Is(TokenKind.Comma))
+            {
+                Tokens.ConsumeToken();
+            }
+            else
+            {
+                var simpleValue = ReadSimpleValue();
+                if (simpleValue is IPsdCondition conditionObject)
+                {
+                    conditions.Peek().Add(conditionObject);
+                }
+            }
+        }
+
+        return initialCondition;
+    }
+
+    private PsdScriptblock ReadKeywordScriptblock()
+    {
+        int nestedScriptBlocks = 1;
+        var scriptblock = new PsdScriptblock();
+        Tokens.ConsumeToken();
+        Tokens.InScriptblock = true;
+        while (Tokens.InScriptblock)
+        {
+            if (Tokens.Current.IsScriptblockStart())
+            {
+                nestedScriptBlocks++;
+            }
+
+            if (Tokens.Current.IsMapClose())
+            {
+                nestedScriptBlocks--;
+                if (nestedScriptBlocks == 0)
+                {
+                    Tokens.InScriptblock = false;
+                    Tokens.ConsumeToken();
+                }
+            }
+
+            if (!Tokens.Current.IsNewLine())
+            {
+                scriptblock.Add(ReadSimpleValue());
+            }
+            else
+            {
+                Tokens.ConsumeToken();
+            }
+        }
+
+        TestForInlineComment(scriptblock);
+        return scriptblock;
+    }
+
     private PsdMapEntry ReadMapEntry()
     {
         string identifier = ReadIdentifier();
@@ -206,7 +307,13 @@ public sealed class PsdReader
         }
         else if (Tokens.Current.IsKeyword())
         {
-            value = ReadKeywordBlock();
+            var keywords = new PsdKeywordCollection();
+            while (Tokens.Current.IsKeyword())
+            {
+                keywords.Add(ReadKeyword());
+            }
+
+            value = keywords;
         }
         else if (Tokens.IsSimpleValue())
         {
@@ -237,8 +344,6 @@ public sealed class PsdReader
         return nestedMap;
     }
 
-    private NumberValue ReadNumber(NumberToken numberToken) => new NumberValue(numberToken);
-
     private IPsdObject ReadPsdObject()
     {
         IPsdObject value = null;
@@ -258,116 +363,12 @@ public sealed class PsdReader
         return value;
     }
 
-    private PsdKeyword ReadKeywordBlock()
-    {
-        PsdKeyword keywordBlock = new(Tokens.Current.Text);
-        Tokens.ConsumeToken();
-        if (Tokens.Current.IsNewLine())
-        {
-            Tokens.ConsumeToken();
-        }
-
-        if (Tokens.Current.IsArrayStart())
-        {
-            keywordBlock.Condition = ReadKeywordConditions();
-        }
-        else if (Tokens.Current.Is(TokenKind.LCurly))
-        {
-            keywordBlock.Scriptblock = ReadKeywordScriptblock();
-        }
-
-        return keywordBlock;
-    }
-
-    private PsdConditionCollection ReadKeywordConditions()
-    {
-        var initialCondition = new PsdConditionCollection(Tokens.Current);
-        var conditions = new Stack<PsdConditionCollection>();
-        conditions.Push(initialCondition);
-        Tokens.ConsumeToken();
-
-        while (conditions.Count != 0)
-        {
-            if (Tokens.Current.IsArrayStart())
-            {
-                conditions.Push(new PsdConditionCollection(Tokens.Current));
-            }
-            else if (Tokens.Current.IsArrayClose())
-            {
-                var condition = conditions.Pop();
-                TestForInlineComment(condition);
-            }
-            else if (Tokens.Current.IsNewLine() || Tokens.Current.Is(TokenKind.Comma))
-            {
-                // Just consume the token
-            }
-            else
-            {
-                var simpleValue = ReadSimpleValue();
-                if (simpleValue is IPsdCondition conditionObject)
-                {
-                    conditions.Peek().Add(conditionObject);
-                }
-            }
-
-            Tokens.ConsumeToken();
-        }
-
-        return initialCondition;
-    }
-
-    private PsdScriptblock ReadKeywordScriptblock()
-    {
-        int nestedScriptBlocks = 0;
-        var scriptblock = new PsdScriptblock();
-        Tokens.ConsumeToken();
-        Tokens.InScriptblock = true;
-        while (Tokens.InScriptblock)
-        {
-            if (Tokens.Current.IsScriptblockStart())
-            {
-                nestedScriptBlocks++;
-            }
-
-            if (Tokens.Current.IsMapClose())
-            {
-                nestedScriptBlocks--;
-                if (nestedScriptBlocks == 0)
-                {
-                    Tokens.InScriptblock = false;
-                }
-            }
-
-            if (!Tokens.Current.IsNewLine())
-            {
-                scriptblock.Add(ReadSimpleValue());
-            }
-
-            Tokens.ConsumeToken();
-        }
-
-        TestForInlineComment(scriptblock);
-        return scriptblock;
-    }
-
     private IPsdObject ReadSimpleValue()
     {
         var value = BaseValue.Create(Tokens.Current);
         Tokens.ConsumeToken();
         TestForInlineComment(value);
         return value;
-    }
-
-    private BaseStringValue ReadString(StringToken stringToken) => BaseStringValue.Create(stringToken);
-
-    private IPsdObject ReadVariable(VariableToken variableToken)
-    {
-        if (variableToken.Name.Equals("true") || variableToken.Name.Equals("false"))
-        {
-            return new BooleanValue(variableToken);
-        }
-
-        return new VariableValue(variableToken);
     }
 
     private bool TestForArrayClose()

@@ -16,4 +16,6 @@ public sealed class PsdFile : PsdBaseMap
         _moduleDirectory = _modulePath?.Directory;
         Data = new PsdCoreData(originalText);
     }
+
+    public override string ToString() => _modulePath.Name;
 }

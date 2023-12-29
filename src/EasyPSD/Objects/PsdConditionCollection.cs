@@ -34,6 +34,8 @@ public class PsdConditionCollection : IPsdCollection<IPsdCondition>, IPsdConditi
 
     public bool IsReadOnly => false;
 
+    public PsdConditionCollection(Token token) => _token = token;
+
     public void Add(IPsdCondition item) => _items?.Add(item);
 
     public void Clear() => _items?.Clear();
@@ -43,8 +45,6 @@ public class PsdConditionCollection : IPsdCollection<IPsdCondition>, IPsdConditi
     public void CopyTo(IPsdCondition[] array, int offset) => _items?.CopyTo(array, offset);
 
     public IEnumerator<IPsdCondition> GetEnumerator() => _items?.GetEnumerator();
-
-    public PsdConditionCollection(Token token) => _token = token;
 
     public virtual string GetValue()
     {

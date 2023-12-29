@@ -17,8 +17,8 @@ public abstract class BaseValue : IPsdObject
             VariableToken variableToken when variableToken.Name.Equals("true") => new BooleanValue(variableToken),
             VariableToken variableToken when variableToken.Name.Equals("false") => new BooleanValue(variableToken),
             VariableToken variableToken => new VariableValue(variableToken),
-            Token when token.Is(TokenFlags.BinaryPrecedenceComparison) => new ComparisonCondition(token.Text),
-            Token when token.Is(TokenFlags.BinaryPrecedenceLogical) => new LogicalCondition(token.Text),
+            Token when token.IsComparisonOperator() => new ComparisonCondition(token.Text),
+            Token when token.IsLogicalOperator() => new LogicalCondition(token.Text),
             _ => new ScriptblockValue(token.Text)
         };
     }
